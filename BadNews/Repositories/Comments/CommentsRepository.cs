@@ -7,8 +7,7 @@ namespace BadNews.Repositories.Comments
     {
         public IReadOnlyCollection<Comment> GetComments(Guid newsId)
         {
-            return new[]
-            {
+            return new[] {
                 new Comment("Вася", "Здесь был Вася!"),
                 new Comment("Воробушек", "ЧИК-ЧИРИК"),
             };

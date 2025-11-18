@@ -1,17 +1,27 @@
 # SignalR и Blazor
+
 В этом задании предстоит внедрить использование SignalR и Blazor
 в существующий проект.
 
 # Подготовка
-Перед началом выполнения задания полезно вспомнить, как в JavaScript происходит обращение к элементам страницы. Также полезно почитать, что такое long polling и web sockets.
+
+Перед началом выполнения задания полезно вспомнить, как в JavaScript происходит обращение к элементам страницы. Также
+полезно почитать, что такое long polling и web sockets.
 
 # 1. Переход к JavaScript
-Перед нами уже знакомый нам проект - BadNews. Владельцы сайта захотели увеличить его посещаемость. В качестве одного из путей достижения своей цели они выбрали добавление комментариев - так они надеются, что люди захотят подольше оставаться на портале. При этом они слышали, что везде происходит переход на JavaScript для рендеринга страниц. Давайте мы постепенно начнём его внедрять.
+
+Перед нами уже знакомый нам проект - BadNews. Владельцы сайта захотели увеличить его посещаемость. В качестве одного из
+путей достижения своей цели они выбрали добавление комментариев - так они надеются, что люди захотят подольше оставаться
+на портале. При этом они слышали, что везде происходит переход на JavaScript для рендеринга страниц. Давайте мы
+постепенно начнём его внедрять.
 
 ## 1.1. Подготовка API
-Для начала нам нужно подготовить API, откуда будут получаться текущие комментарии для новости. Репозиторий уже готов и лежит в классе `CommentsRepository.cs`. Нужно его зарегистрировать в контейнере.
+
+Для начала нам нужно подготовить API, откуда будут получаться текущие комментарии для новости. Репозиторий уже готов и
+лежит в классе `CommentsRepository.cs`. Нужно его зарегистрировать в контейнере.
 
 Создайте новый класс `CommentDto` по пути `Models\Comments`. Поместите туда следующий код:
+
 ```cs
 namespace BadNews.Models.Comments
 {
@@ -23,7 +33,9 @@ namespace BadNews.Models.Comments
     }
 }
 ```
+
 Теперь сделайте общую модель для коллекции комментариев `CommentsDto`:
+
 ```cs
 using System;
 using System.Collections.Generic;
@@ -41,6 +53,7 @@ namespace BadNews.Models.Comments
 ```
 
 Для этого создайте новый класс `CommentsController` из следующего шаблона:
+
 ```cs
 using System;
 using System.Linq;
@@ -70,43 +83,55 @@ namespace BadNews.Controllers
     }
 }
 ```
+
 Метод реализуйте самостоятельно.
 
 ## 1.2. JavaScript
-Для начала подключим JQuery, чтобы удобнее было делать запросы к API. В проекте она уже есть, осталось подключить на страницу. Откройте `Views\News\FullArticle.html` и добавьте после импортов строчку
+
+Для начала подключим JQuery, чтобы удобнее было делать запросы к API. В проекте она уже есть, осталось подключить на
+страницу. Откройте `Views\News\FullArticle.html` и добавьте после импортов строчку
+
 ```html
+
 <script src="/lib/jquery/dist/jquery.min.js"></script>
 ```
 
 Затем добавьте блок для комментариев после текста новости:
+
 ```html
-<div id="comments" />
+
+<div id="comments"/>
 ```
 
 Теперь сделаем запрос к нашему API и вставим полученные комментарии в код страницы:
+
 ```js
 <script type="text/javascript">
     $.get(`/api/news/@Model.Article.Id.ToString()/comments`, function(data) {
-        const commentsDiv = document.getElementById('comments');
-        
-        for (const comment of data.comments) {
-            const li = document.createElement("li");
-            li.textContent = `${comment.user} говорит: ${comment.value}`;
-            commentsDiv.appendChild(li);
-        }
-    });
+    const commentsDiv = document.getElementById('comments');
+
+    for (const comment of data.comments) {
+    const li = document.createElement("li");
+    li.textContent = `${comment.user} говорит: ${comment.value}`;
+    commentsDiv.appendChild(li);
+}
+});
 </script>
 ```
 
 Теперь попробуйте открыть любую новость и проверьте, что комментарии вставились.
 
 # 2. SignalR
+
 Всё хорошо, комментарии загружаются, но босс хочет их обновление в реальном времени. Настала пора подключить SignalR!
 
 ## 2.1. Серверная часть
-Нужно создать так называемый "хаб". Хаб - это класс-посредник между серверной и клиентской частью. Он определяет, куда и в каком виде будет отправлено сообщение от сервера.
+
+Нужно создать так называемый "хаб". Хаб - это класс-посредник между серверной и клиентской частью. Он определяет, куда и
+в каком виде будет отправлено сообщение от сервера.
 
 Создайте папку Hubs, а в ней класс `CommentsHub.cs` с содержимым:
+
 ```cs
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -122,17 +147,23 @@ namespace BadNews.Hubs
     }
 }
 ```
+
 Теперь в `Startup.cs` добавьте строку
+
 ```cs
 services.AddSignalR();
 ```
+
 в `ConfigureServices`, а в `Configure` - эту строку:
+
 ```cs
 endpoints.MapHub<CommentsHub>("/commentsHub");
 ```
 
 ## 2.2. Отправка сообщений
+
 Подготовимся к тестированию и создадим поля для отправки сообщений. В `FullArtice.cshtml` добавьте следующие элементы:
+
 ```html
 <label>
     Пользователь <input id="userInput">
@@ -148,10 +179,13 @@ endpoints.MapHub<CommentsHub>("/commentsHub");
 ## 2.3. Клиентская часть.
 
 Для начала установим менеджер пакетов `libman` командой
+
 ```
 dotnet tool install -g Microsoft.Web.LibraryManager.Cli
 ```
+
 Если вы используете Linux с zsh или MacOS, вы можете встретиться с похожей ошибкой:
+
 ```
 ~ % dotnet tool install --global Microsoft.Web.LibraryManager.CLI
 Tools directory '/Users/jimmy/.dotnet/tools' is not currently on the PATH environment variable.
@@ -166,30 +200,36 @@ export PATH="$PATH:/Users/jimmy/.dotnet/tools"
 You can invoke the tool using the following command: libman
 Tool 'microsoft.web.librarymanager.cli' (version '2.0.96') was successfully installed.
 ```
+
 В сообщении уже написаны дальнейшие шаги. Нужны выполнить команды
+
 ```
 cat << \EOF >> ~/.zprofile
 # Add .NET Core SDK tools
 export PATH="$PATH:/Users/jimmy/.dotnet/tools"
 EOF
 ```
+
 и `zsh -l`
 
 После установки libman добавим клиентскую библиотеку (вызывайте из проекта BadNews):
+
 ```
 libman install @microsoft/signalr@latest -p unpkg -d wwwroot/js/signalr --files dist/browser/signalr.js --files dist/browser/signalr.min.js
 ```
 
 Подключим в FullArticle.cshtml скрипт SignalR:
+
 ```cs
 <script src="/js/signalr/dist/browser/signalr.js"></script>
 ```
 
 Замените наш скрипт на следующий:
+
 ```js
-$.get(`/api/news/@Model.Article.Id.ToString()/comments`, function(data) {
+$.get(`/api/news/@Model.Article.Id.ToString()/comments`, function (data) {
     const commentsDiv = document.getElementById('comments');
-    
+
     for (const comment of data.comments) {
         const li = document.createElement("li");
         li.textContent = `${comment.user} говорит: ${comment.value}`;
@@ -227,17 +267,26 @@ document.getElementById("sendButton").addEventListener("click", function (event)
 });
 
 ```
-Теперь попробуйте отправить любой комментарий. Он должен появиться у вас на странице. Проверьте так же, что всё работает, если вы отправляете комментарий из другой вкладки.
 
-Чтобы посмотреть, что за сообщения передаются между страницей и бэкендом, зайдите в инструменты разработчика, перейдите на вкладку Network (Сеть). На вкладке All можно увидеть запрос на подключение к хабу, а на вкладке WS - соединение по WebSocket'ам и сами сообщения.
+Теперь попробуйте отправить любой комментарий. Он должен появиться у вас на странице. Проверьте так же, что всё
+работает, если вы отправляете комментарий из другой вкладки.
+
+Чтобы посмотреть, что за сообщения передаются между страницей и бэкендом, зайдите в инструменты разработчика, перейдите
+на вкладку Network (Сеть). На вкладке All можно увидеть запрос на подключение к хабу, а на вкладке WS - соединение по
+WebSocket'ам и сами сообщения.
 
 # 3. Blazor
-Босс обрадовался тому, что вы сделали, и решил усилить вашу команду, дав вам помощника. К сожалению, с JavaScript он совсем не дружит, а задачу ему уже дали... Настало время снова обратиться к C#, а точнее, - к Blazor.
+
+Босс обрадовался тому, что вы сделали, и решил усилить вашу команду, дав вам помощника. К сожалению, с JavaScript он
+совсем не дружит, а задачу ему уже дали... Настало время снова обратиться к C#, а точнее, - к Blazor.
 
 # 3.1. Компонент Blazor.
-Давайте теперь выделим компонент с комментариями, переписав его сразу на Blazor. При этом будем руководствоваться следующим подходом: изменения можно внедрять постепенно.
+
+Давайте теперь выделим компонент с комментариями, переписав его сразу на Blazor. При этом будем руководствоваться
+следующим подходом: изменения можно внедрять постепенно.
 
 Создайте папку BlazorComponents, а в ней - файл `Comments.razor` со следующим содержимым:
+
 ```cs
 @using BadNews.Repositories.Comments
 @inject CommentsRepository commentsRepository;
@@ -263,25 +312,36 @@ document.getElementById("sendButton").addEventListener("click", function (event)
     private string RenderComment(Comment comment) => $"{comment.User} говорит: {comment.Value}";
 }
 ```
-Разберём код. Бывает два вида компонентов: компонент и страница. У страницы таке указывается путь, по которому она доступн. Код компонента стоит из двух частей: разметка (как в Razor) и код на C#, где описаны поля, параметры и код.
 
-Директива `@using` служит для различных импортов, `@inject` - для внедрения зависимостей (из контейнера). Атрибут `[Parameter]` служит для обозначения внешних параметров компонента.
+Разберём код. Бывает два вида компонентов: компонент и страница. У страницы таке указывается путь, по которому она
+доступн. Код компонента стоит из двух частей: разметка (как в Razor) и код на C#, где описаны поля, параметры и код.
 
-Метод `SetParameteresAsync` - один из методов жизненного цикла компонента, служит для заполнения свойств, использующихся в разметке.
+Директива `@using` служит для различных импортов, `@inject` - для внедрения зависимостей (из контейнера). Атрибут
+`[Parameter]` служит для обозначения внешних параметров компонента.
+
+Метод `SetParameteresAsync` - один из методов жизненного цикла компонента, служит для заполнения свойств, использующихся
+в разметке.
 
 Теперь вставим компонент в `FullArticle.cshtml` строчкой
+
 ```cs
-@(await Html.RenderComponentAsync<Comments>(RenderMode.ServerPrerendered))
+    @(await Html.RenderComponentAsync<Comments>(RenderMode.ServerPrerendered))
 ```
-Существует несколько режимов рендеринга: статический, серверный (два вида) и клиентский (тоже два вида). В данном случае мы используем серверный рендеринг, потому что он проще подключается. Отличие Prerendered от обычного режима в том, что в обычном режиме компонент не вставляется в html-код страницы, поэтому он может не отображаться.
+
+Существует несколько режимов рендеринга: статический, серверный (два вида) и клиентский (тоже два вида). В данном случае
+мы используем серверный рендеринг, потому что он проще подключается. Отличие Prerendered от обычного режима в том, что в
+обычном режиме компонент не вставляется в html-код страницы, поэтому он может не отображаться.
 
 Уберите ещё все js-скрипты и их импорты - они нам не понадобятся.
 
 Добавьте в `Startup.cs` в `Configure` строчку
+
 ```cs
 endpoints.MapBlazorHub();
 ```
+
 а в `ConfigureServices` - строчку
+
 ```cs
 services.AddServerSideBlazor();
 ```
@@ -289,6 +349,7 @@ services.AddServerSideBlazor();
 Также очистите опцию `UseStaticFiles` (оставьте только вызов `app.UseStaticFiles()`);
 
 Создайте в корне проекта файл `_Imports.razor` с содержимым
+
 ```cs
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.AspNetCore.Components.Authorization;
@@ -298,19 +359,22 @@ services.AddServerSideBlazor();
 ```
 
 В _Layout.cshtml добавьте две строчки:
+
 ```cs
-<base href="~/" />
+    <base href="~/" />
 ...
 <script src="_framework/blazor.server.js"></script>
 ```
 
-
 Проверьте, что после этого на странице какой-нибудь новости отоюражаются комментарии.
 
 # 3.2. Blazor и SignalR.
+
 Настала пора вернуть интерактив в комментарии. Подключим SignalR.
 
-Установите пакет `Microsoft.AspNetCore.SignalR.Client` версии 5.0.4. Теперь замените компонент `Comments.razor` на следующий код:
+Установите пакет `Microsoft.AspNetCore.SignalR.Client` версии 5.0.4. Теперь замените компонент `Comments.razor` на
+следующий код:
+
 ```cs
 @using BadNews.Repositories.Comments
 @using Microsoft.AspNetCore.SignalR.Client
@@ -384,6 +448,7 @@ services.AddServerSideBlazor();
     private string RenderComment(Comment comment) => $"{comment.User} говорит: {comment.Value}";
 }
 ```
+
 а в `FullArticle.cshtml` уберите инпуты с кнопкой.
 
 Теперь проверьте, что у вас отправляются комментарии.
